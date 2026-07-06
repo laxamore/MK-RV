@@ -1,0 +1,34 @@
+yosys -import
+source edalize_yosys_procs.tcl
+
+verilog_defaults -push
+verilog_defaults -add -defer
+
+set_defines
+set_incdirs
+read_files
+set_params
+
+verilog_defaults -pop
+
+# Bypassing the Edalize "synth_xilinx" wrapper completely
+hierarchy -check -top $top
+yosys proc
+opt
+fsm
+opt
+memory
+opt
+techmap
+opt
+
+# Map Flip-Flops to the Sky130 Library
+dfflibmap -liberty ../../../lib/sky130_fd_sc_hd__tt_025C_1v80.lib
+
+# Map Combinatorial Logic to the Sky130 Library
+abc -liberty ../../../lib/sky130_fd_sc_hd__tt_025C_1v80.lib
+
+clean
+
+# Generate a final statistical report (Gate count, Area)
+stat -liberty ../../../lib/sky130_fd_sc_hd__tt_025C_1v80.lib
