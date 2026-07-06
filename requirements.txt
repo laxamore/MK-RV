@@ -1,0 +1,11 @@
+fusesoc>=2.3
+
+# Python Verification Framework
+cocotb>=2.0.1
+pytest>=7.0.0
+
+# Wishbone Verification IP
+cocotbext-wishbone>=1.0.0
+
+# Official RISC-V Compliance Framework (For the CPU later)
+riscof>=1.25.2

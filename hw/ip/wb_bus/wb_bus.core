@@ -1,0 +1,38 @@
+CAPI=2:
+name: mk_rv:ip:wb_bus:1.0.0
+description: Wishbone B4 Crossbar/Interconnect for the MK-RV SoC
+
+filesets:
+  rtl:
+    files:
+      - rtl/wb_crossbar.sv
+    file_type: systemVerilogSource
+
+  # This fileset holds the dummy Verilog wrapper for our Python testbench
+  tb:
+    files:
+      - dv/tb_wb_crossbar.sv
+    file_type: systemVerilogSource
+
+targets:
+  default: &default
+    filesets:
+      - rtl
+    toplevel: wb_crossbar
+
+  # Target for running our Cocotb (Python) verification
+  sim_cocotb:
+    <<: *default
+    description: Python-based Wishbone verification using Verilator
+    filesets_append:
+      - tb
+    default_tool: verilator
+    toplevel: tb_wb_crossbar
+    tools:
+      verilator:
+        mode: cc
+        verilator_options:
+          - "--trace"      # Enable waveform generation
+          - "--trace-fst"  # Use FST format (smaller and faster than VCD for GTKWave)
+          - "-Wno-fatal"   # Prevent minor linting warnings from crashing the build
+          - "--timing"     # Required for Verilator 5+ to handle time delays correctly
