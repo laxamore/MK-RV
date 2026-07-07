@@ -1,15 +1,16 @@
 CAPI=2:
-name: mk_rv:ip:wb_bus:1.0.0
-description: Wishbone B4 Crossbar/Interconnect for the MK-RV SoC
+name: mk_rv:ip:uart:1.0.0
+description: A simple Wishbone UART with internal 8-byte FIFOs
 
 filesets:
   rtl:
     files:
-      - rtl/wb_crossbar.sv
-      - rtl/wb_crossbar_wrapper.sv
+      - rtl/sync_fifo.sv
+      - rtl/uart_tx.sv
+      - rtl/uart_rx.sv
+      - rtl/uart_wb_slave.sv
     file_type: systemVerilogSource
 
-  # Fileset for custom scripts
   sky130_pdk:
     files:
       - ../../../synth/sky130_yosys_template.ys: {file_type: user, copyto: scripts/sky130_yosys_template.ys}
@@ -18,12 +19,8 @@ targets:
   default: &default
     filesets:
       - rtl
-    toplevel: wb_crossbar_wrapper
-  # ===========================================================================
-  # Synthesis Targets (Out of Context for IP cores)
-  # ===========================================================================
+    toplevel: uart_wb_slave
 
-  # 1. Yosys (Open Source) - Extremely fast for checking logic/gates
   synth_yosys:
     <<: *default
     description: Synthesize with Yosys
@@ -31,26 +28,24 @@ targets:
     flow_options:
       tool: yosys
       arch: xilinx
-    toplevel: wb_crossbar_wrapper
+    toplevel: uart_wb_slave
 
-  # 2. Vivado (Commercial) - For your final Artix-7 target
   synth_vivado:
     <<: *default
     description: Synthesize with Xilinx Vivado for Artix-7
     flow: vivado
     flow_options:
       part: xc7a100tfgg676-1
-    toplevel: wb_crossbar_wrapper
+    toplevel: uart_wb_slave
 
-  # 3. Skywater 130nm (ASIC Target)
   synth_sky130:
     <<: *default
     description: Synthesize with Yosys for Sky130 PDK
     flow: generic
     flow_options:
       tool: yosys
-      arch: xilinx # Dummy architecture to satisfy Edalize's Python parser
+      arch: xilinx
       yosys_template: scripts/sky130_yosys_template.ys
     filesets_append:
       - sky130_pdk
-    toplevel: wb_crossbar_wrapper
+    toplevel: uart_wb_slave
