@@ -1,0 +1,48 @@
+CAPI=2:
+name: mk_rv:ip:gpio:1.0.0
+description: A simple Wishbone GPIO peripheral
+
+filesets:
+  rtl:
+    files:
+      - rtl/gpio_wb_slave.sv
+    file_type: systemVerilogSource
+
+  sky130_pdk:
+    files:
+      - ../../../synth/sky130_yosys_template.ys: {file_type: user, copyto: scripts/sky130_yosys_template.ys}
+
+targets:
+  default: &default
+    filesets:
+      - rtl
+    toplevel: gpio_wb_slave
+
+  synth_yosys:
+    <<: *default
+    description: Synthesize with Yosys
+    flow: generic
+    flow_options:
+      tool: yosys
+      arch: xilinx
+    toplevel: gpio_wb_slave
+
+  synth_vivado:
+    <<: *default
+    description: Synthesize with Xilinx Vivado for Artix-7
+    flow: vivado
+    flow_options:
+      part: xc7a100tfgg676-1
+    toplevel: gpio_wb_slave
+
+  synth_sky130:
+    <<: *default
+    description: Synthesize with Yosys for Sky130 PDK
+    flow: generic
+    flow_options:
+      tool: yosys
+      arch: xilinx
+      yosys_template: scripts/sky130_yosys_template.ys
+    filesets_append:
+      - sky130_pdk
+    toplevel: gpio_wb_slave
