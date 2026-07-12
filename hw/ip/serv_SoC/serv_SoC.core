@@ -1,0 +1,169 @@
+CAPI=2:
+name: mk_rv:soc:serv:1.0.0
+description: SERV-based SoC with MK-RV Wishbone peripherals (UART, GPIO, Timer)
+license: ISC
+
+scripts:
+  build_fw:
+    cmd: [make, -C, ../../../fw, all]
+
+filesets:
+  rtl:
+    files:
+      - rtl/serv_boot_ram.sv
+      - rtl/mk_rv_serv_soc.sv
+    file_type: systemVerilogSource
+    depend:
+      - award-winning:serv:servile:1.4.0
+      - mk_rv:ip:uart:1.0.0
+      - mk_rv:ip:gpio:1.0.0
+      - mk_rv:ip:timer:1.0.0
+      - mk_rv:ip:wb_bus:1.0.0
+
+  sky130_pdk:
+    files:
+      - ../../../synth/sky130_yosys_template.ys: {file_type: user, copyto: scripts/sky130_yosys_template.ys}
+
+  sim_tb:
+    files:
+      - ../../../sim/sim_main.cpp: {file_type: cppSource}
+      - ../../../sim/sim_tb.sv: {file_type: systemVerilogSource}
+    file_type: cppSource
+
+targets:
+  default: &default
+    filesets:
+      - rtl
+    toplevel: mk_rv_serv_soc
+
+  sim:
+    description: Run Verilator C++ simulation (blinky firmware)
+    filesets:
+      - rtl
+      - sim_tb
+    flow: sim
+    flow_options:
+      tool: verilator
+      verilator_options: [--trace, -Wno-fatal, -Wno-WIDTH, -Wno-CASEOVERLAP, -Wno-CASEX, -Wno-BLKANDNBLK, -Wno-UNOPTFLAT, -Wno-UNSIGNED, -Wno-PINCONNECTEMPTY, -Wno-MODDUP, -Wno-TIMESCALEMOD, -Wno-UNUSEDSIGNAL, -Wno-UNUSEDPARAM]
+    toplevel: tb_mk_rv_serv_sim
+    hooks:
+      pre_build: [build_fw]
+    parameters:
+      - MEMFILE=../../../fw/build/blinky/blinky.mem
+
+  sim_uart:
+    description: Run Verilator C++ simulation (uart_hello firmware)
+    filesets:
+      - rtl
+      - sim_tb
+    flow: sim
+    flow_options:
+      tool: verilator
+      verilator_options: [--trace, -Wno-fatal, -Wno-WIDTH, -Wno-CASEOVERLAP, -Wno-CASEX, -Wno-BLKANDNBLK, -Wno-UNOPTFLAT, -Wno-UNSIGNED, -Wno-PINCONNECTEMPTY, -Wno-MODDUP, -Wno-TIMESCALEMOD, -Wno-UNUSEDSIGNAL, -Wno-UNUSEDPARAM]
+    toplevel: tb_mk_rv_serv_sim
+    hooks:
+      pre_build: [build_fw]
+    parameters:
+      - MEMFILE=../../../fw/build/uart_hello/uart_hello.mem
+
+  sim_freertos:
+    description: Run Verilator C++ simulation (FreeRTOS firmware)
+    filesets:
+      - rtl
+      - sim_tb
+    flow: sim
+    flow_options:
+      tool: verilator
+      verilator_options: [--trace, -Wno-fatal, -Wno-WIDTH, -Wno-CASEOVERLAP, -Wno-CASEX, -Wno-BLKANDNBLK, -Wno-UNOPTFLAT, -Wno-UNSIGNED, -Wno-PINCONNECTEMPTY, -Wno-MODDUP, -Wno-TIMESCALEMOD, -Wno-UNUSEDSIGNAL, -Wno-UNUSEDPARAM]
+    toplevel: tb_mk_rv_serv_sim
+    hooks:
+      pre_build: [build_fw]
+    parameters:
+      - MEMFILE=../../../fw/build/freertos/freertos.mem
+
+  synth_yosys:
+    description: Yosys synthesis (Xilinx arch)
+    filesets: [rtl]
+    flow: generic
+    flow_options:
+      tool: yosys
+      arch: xilinx
+    toplevel: mk_rv_serv_soc
+    parameters:
+      - W
+      - WITH_CSR
+      - RESET_STRATEGY
+      - MEMFILE
+      - MEM_DEPTH
+      - RESET_PC
+
+  synth_vivado:
+    description: Vivado synthesis (Artix-7)
+    filesets: [rtl]
+    flow: vivado
+    flow_options:
+      part: xc7a100tfgg676-1
+    toplevel: mk_rv_serv_soc
+    parameters:
+      - W
+      - WITH_CSR
+      - RESET_STRATEGY
+      - MEMFILE
+      - MEM_DEPTH
+      - RESET_PC
+
+  synth_sky130:
+    description: Sky130 synthesis via Yosys
+    filesets: [rtl]
+    flow: generic
+    flow_options:
+      tool: yosys
+      arch: xilinx
+      yosys_template: scripts/sky130_yosys_template.ys
+    filesets_append:
+      - sky130_pdk
+    toplevel: mk_rv_serv_soc
+    parameters:
+      - W
+      - WITH_CSR
+      - RESET_STRATEGY
+      - MEMFILE
+      - MEM_DEPTH
+      - RESET_PC
+
+parameters:
+  W:
+    datatype: int
+    paramtype: vlogparam
+    description: SERV datapath width (1=bit-serial, 4=QERV)
+    default: 1
+
+  WITH_CSR:
+    datatype: int
+    paramtype: vlogparam
+    description: Enable RISC-V CSR registers (needed for timer IRQ)
+    default: 1
+
+  RESET_STRATEGY:
+    datatype: str
+    paramtype: vlogparam
+    description: Reset strategy (MINI, MAXI, NONE)
+    default: "MINI"
+
+  RESET_PC:
+    datatype: int
+    paramtype: vlogparam
+    description: Reset vector address
+    default: 0
+
+  MEMFILE:
+    datatype: str
+    paramtype: vlogparam
+    description: Firmware hex file
+    default: "../../../fw/build/blinky/blinky.mem"
+
+  MEM_DEPTH:
+    datatype: int
+    paramtype: vlogparam
+    description: Boot RAM depth in bytes
+    default: 16384
